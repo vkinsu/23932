@@ -1,3 +1,7 @@
 all:
-	gcc -c main.c -o main.o
+	gcc main.c -o a.out
+
+	gcc main.c -o main
+	
+	gcc main.c -o main.o
 
