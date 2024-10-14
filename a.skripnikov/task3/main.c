@@ -25,7 +25,7 @@ int main(int args, char *argv[])
     }
 
     // 3
-    setuid(geteuid());
+    setuid(getuid());
 
     // 4
     printf("Real UID: %d\n", getuid());
