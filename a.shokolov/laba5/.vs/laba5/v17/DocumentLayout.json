@@ -1,0 +1,58 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\osi\\laba5\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{F29A357F-44B7-4461-8153-0E16AD8E7337}|laba5\\laba5.vcxproj|D:\\osi\\laba5\\laba5\\laba5.c||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{F29A357F-44B7-4461-8153-0E16AD8E7337}|laba5\\laba5.vcxproj|solutionrelative:laba5\\laba5.c||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F29A357F-44B7-4461-8153-0E16AD8E7337}|laba5\\laba5.vcxproj|D:\\osi\\laba5\\laba5\\text.txt||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{F29A357F-44B7-4461-8153-0E16AD8E7337}|laba5\\laba5.vcxproj|solutionrelative:laba5\\text.txt||{8B382828-6202-11D1-8870-0000F87579D2}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "text.txt",
+              "DocumentMoniker": "D:\\osi\\laba5\\laba5\\text.txt",
+              "RelativeDocumentMoniker": "laba5\\text.txt",
+              "ToolTip": "D:\\osi\\laba5\\laba5\\text.txt",
+              "RelativeToolTip": "laba5\\text.txt",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAAQAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003109|",
+              "WhenOpened": "2024-10-12T10:42:40.088Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "laba5.c",
+              "DocumentMoniker": "D:\\osi\\laba5\\laba5\\laba5.c",
+              "RelativeDocumentMoniker": "laba5\\laba5.c",
+              "ToolTip": "D:\\osi\\laba5\\laba5\\laba5.c",
+              "RelativeToolTip": "laba5\\laba5.c",
+              "ViewState": "AgIAADsAAAAAAAAAAAAcwFEAAAA6AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2024-10-12T10:42:15.388Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

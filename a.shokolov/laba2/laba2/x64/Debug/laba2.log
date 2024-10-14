@@ -1,0 +1,5 @@
+﻿  laba2.c
+D:\osi\laba2\laba2\laba2.c(18,5): warning C4013: setenv: нет определения; предполагается "extern" с возвратом типа "int"
+D:\osi\laba2\laba2\laba2.c(15,23): error C4996: 'ctime': This function or variable may be unsafe. Consider using ctime_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\osi\laba2\laba2\laba2.c(19,5): error C4996: 'tzset': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _tzset. See online help for details.
+D:\osi\laba2\laba2\laba2.c(22,10): error C4996: 'localtime': This function or variable may be unsafe. Consider using localtime_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
