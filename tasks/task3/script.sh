@@ -1,6 +1,6 @@
 touch file.txt
 chmod 600 file.txt
-gcc -o main main.c
+gcc main.c
 chmod g+rx main
 chmod u+s main
 ./main
