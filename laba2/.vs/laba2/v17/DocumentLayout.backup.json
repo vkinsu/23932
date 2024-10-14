@@ -1,0 +1,41 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\osi\\laba2\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{B6853379-E4D3-40CB-A83D-8CA96706DD03}|laba2\\laba2.vcxproj|D:\\osi\\laba2\\laba2\\laba2.c||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{B6853379-E4D3-40CB-A83D-8CA96706DD03}|laba2\\laba2.vcxproj|solutionrelative:laba2\\laba2.c||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "laba2.c",
+              "DocumentMoniker": "D:\\osi\\laba2\\laba2\\laba2.c",
+              "RelativeDocumentMoniker": "laba2\\laba2.c",
+              "ToolTip": "D:\\osi\\laba2\\laba2\\laba2.c",
+              "RelativeToolTip": "laba2\\laba2.c",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABYAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2024-10-08T05:55:22.149Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
