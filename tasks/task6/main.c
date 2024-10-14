@@ -3,10 +3,15 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <signal.h>
 
 #define MAX_LINES 1000
 #define MAX_LINE_LENGTH 256
 
+void MyAlarm (int var)
+{     puts ("\nTime's up.");
+      _Exit (0);
+}
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
@@ -57,6 +62,8 @@ int main(int argc, char *argv[]) {
     while (1) {
         int line_number;
         printf("Enter line number (0 to quit): ");
+	signal(SIGALRM, MyAlarm);
+	alarm(5);
         scanf("%d", &line_number);
         if (line_number == 0) {
             break;
