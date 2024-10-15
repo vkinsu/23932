@@ -4,6 +4,13 @@
 #include <stdlib.h>
 #include <ulimit.h>
 #include <string.h>
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/resource.h>
+#include <errno.h>
+#include <sys/time.h>
 
 extern char** environ;
 
@@ -60,18 +67,23 @@ int main(int argc, char *argv[], char *envp[])
 		printf("Ulimit is now set to %d\n", new_val);
 		break;
 	    case 'c':
-		system("ulimit -c");
+		{
+		struct rlimit rl;
+		if (getrlimit(RLIMIT_CORE, &rl) == 0) 
+			printf("Core file size limit: %lu bytes\n", rl.rlim_cur);
 		break;
+		}
 	    case 'C':
 		new_val = atol(optarg);
-		if (new_val % 2 != 0)
+		if (new_val % 512 != 0)
 		{
-			perror("Core limit must be evet to 2\n");
+			perror("Core limit must be even to 512\n");
 			exit(13);
 		}
-		strcpy(env_val, "ulimit -c ");
-		strcat(env_val, optarg);
-		system(env_val);
+		struct rlimit rl;
+		rl.rlim_cur = new_val;
+		rl.rlim_max = RLIM_INFINITY;
+		setrlimit(RLIMIT_CORE, &rl);
 		break;
 	    case 'd':
 		getcwd(pth, 1000);
