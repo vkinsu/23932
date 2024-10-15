@@ -83,46 +83,53 @@ int main() {
         free(lineBuffer);
     }
 
-    while (1)
-    {
+    while (1) {
         int lineNumber;
 
         printf("Put number: ");
         signal(SIGALRM, timeout_fun);
         alarm(5);
-        scanf("%d", &lineNumber);
+
+        if (scanf("%d", &lineNumber) != 1) {
+            printf("Invalid input. Please enter a number.n");
+            while (getchar() != 'n'); // очистка ввода
+            alarm(0);
+            continue;
+        }
+
         alarm(0);
+
         if (lineNumber == 0) {
-            break;}
-        if (lineNumber < 1 || lineNumber > count1){
-            printf("Invalid line number. Please enter a number from 1 to %d\n", count1);
-            continue;}
-        else{
+            break;
+        }
+
+        if (lineNumber < 1 || lineNumber > count1) {
+            printf("Invalid line number. Please enter a number from 1 to %dn", count1);
+            continue;
+        }
+        else {
             fseek(ptrFile, mas[lineNumber - 1], SEEK_SET);
-            int length = 0;
-            if (lineNumber == count1){
-                 length = ind - mas[lineNumber - 1];}
-            else
-            {
-                length = mas[lineNumber] - mas[lineNumber - 1];
+            int length = (lineNumber == count1) ? ind - mas[lineNumber - 1] : mas[lineNumber] - mas[lineNumber - 1];
+
+            if (length == 0) {
+                printf("Line %d : n", lineNumber);
             }
-            if (length == 0){
-                printf("Line %d : \n", lineNumber);}
-            else
-            {
-                char* lineBuffer = (char*)malloc(length);
-                if (lineBuffer == NULL){
+            else {
+                char* lineBuffer = (char*)malloc(length + 1); // +1 для '0'
+                if (lineBuffer == NULL) {
                     perror("Memory allocation error for line");
-                    break;}
+                    break;
+                }
                 fread(lineBuffer, 1, length, ptrFile);
-                lineBuffer[length - 1] = '\0';
-                printf("Line %d: %s\n", lineNumber, lineBuffer);
+                lineBuffer[length] = '0'; // корректно завершаем строку
+                printf("Line %d: %sn", lineNumber, lineBuffer);
                 free(lineBuffer);
-            }   
+            }
         }
     }
+
     free(buffer);
     free(mas);
-    fclose(ptrFile); 
+    fclose(ptrFile);
     return 0;
 }
