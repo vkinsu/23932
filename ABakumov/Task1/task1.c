@@ -29,7 +29,7 @@ int main(int argc, char *argv[], char *envp[])
 		printf("EUID = %d\n", geteuid());
 		break;
             case 's':
-		if (setpgid(110, 110) == -1)
+		if (setpgid(0, 0) == -1)
 		{
 			perror("Unable to set process as leader\n");
 			exit(13);
