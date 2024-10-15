@@ -5,6 +5,7 @@
 #include <ulimit.h>
 #include <string.h>
 
+extern char** environ;
 
 int main(int argc, char *argv[], char *envp[])
 {
@@ -77,8 +78,9 @@ int main(int argc, char *argv[], char *envp[])
 		printf("Current dir: %s\n", pth);
 		break;
 	    case 'v':
-		while(*envp)
-        		printf("%s\n",*envp++);
+		for (char **env = environ; *env; ++env) {
+			printf("%s\n", *env);
+		}
 		break;
 	    case 'V':
 		// String parsing was optional (((
