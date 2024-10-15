@@ -1,3 +1,3 @@
 all:
-	gcc task5.c -o task5
-	./task5 file.txt
+	gcc task6.c -o task6
+	./task6 file.txt
