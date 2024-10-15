@@ -44,6 +44,14 @@ void printLine(int fd, const LineInfo *line) {
     printf("%s\n", buffer);
 }
 
+void printOffsetTable(LineInfo lines[], int lineCount) {
+    printf("Line Number | Offset\n");
+    printf("----------------------\n");
+    for (int i = 0; i < lineCount; i++) {
+        printf("      %3d     | %10lu\n", i + 1, (unsigned long)lines[i].offset);
+    }
+}
+
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <file>\n", argv[0]);
@@ -61,6 +69,8 @@ int main(int argc, char *argv[]) {
     buildLineTable(fd, lines, &lineCount);
 
     int lineNumber;
+    printOffsetTable(lines, lineCount);
+
     while (1) {
         printf("Enter line number (0 to exit): ");
         scanf("%d", &lineNumber);
@@ -77,4 +87,3 @@ int main(int argc, char *argv[]) {
     close(fd);
     return 0;
 }
-
