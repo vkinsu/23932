@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
                 printf("\n");
                 break;
             case 'U':
-                unsigned long ulimit_new = strtol(optarg, NULL, 10);
+                unsigned long int ulimit_new = strtol(optarg, NULL, 10);
                 if (ulimit_new == 0) {
                     perror("Wrong value format\n");
                     break;
