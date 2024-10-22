@@ -1,3 +1,0 @@
-// mmap()
-// munmap()
-// fstat()
