@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <ctype.h>
 
 #define MAX_LINES 1000
 #define MAX_SIZE_BUFFER 256
@@ -59,13 +60,26 @@ int main(int argc, char *argv[])
         printf("Line %d: offset = %ld, length = %zu\n", i + 1, lines[i].offset, lines[i].length);
     }
 
+    char input[16];
     int line_number;
     while (1)
     {
         printf("\nEnter the line number to display. 0 to exit. The number: ");
-        scanf("%d", &line_number);
+        if (!fgets(input, sizeof(input), stdin))
+        {
+            printf("Error reading input.\n");
+            continue;
+        }
+
+        if (sscanf(input, "%d", &line_number) != 1)
+        {
+            printf("Invalid input! Please enter a valid number.\n");
+            continue;
+        }
+
         if (line_number == 0)
             break;
+
         if (line_number < 1 || line_number > count)
         {
             printf("Incorrect line number!\n");
