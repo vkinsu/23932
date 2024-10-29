@@ -87,7 +87,12 @@ int main(int argc, char* argv[])
   {
     int i;
     printf("String number: ");
-    scanf("%d", &i);
+    if (scanf("%d", &i) != 1)
+    {
+      printf("Incorrect input\n");
+      fseek(stdin,0,SEEK_END);
+      continue;
+    }
     alarm(0);
 
     if (i == 0) return 0;
