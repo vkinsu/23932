@@ -12,7 +12,8 @@ extern int optind, opterr, optopt;
 int main(int argc, char** argv, char** envp)
 {
     
-    int opt, res; 
+    int opt;
+    long int res; 
     void* ptr;
     struct rlimit rl;
     char buff[BUFF_SIZE];
@@ -51,9 +52,10 @@ int main(int argc, char** argv, char** envp)
                 }   
                 break;  
             case 'U':
-                res = ulimit(UL_SETFSIZE,atol(optarg));
-                if (res != -1) 
+		res = atol(optarg);	
+                if (res > 0) 
                 {
+		    ulimit(UL_SETFSIZE,res);
                     printf("The limit has changed successfuly\n");
                     printf("Current limit:\t%lu\n",ulimit(UL_GETFSIZE));  
                 }
@@ -75,25 +77,16 @@ int main(int argc, char** argv, char** envp)
                 break;
             case 'C':
                 rl.rlim_cur = atol(optarg);
-                res = getrlimit(RLIMIT_CORE, &rl);
-                if (res != -1)
+		res = atol(optarg);
+               	if (res > 0)
                 {
-                    printf("Soft:\t%lu\nHard:\t%lu\n", rl.rlim_cur, rl.rlim_max);
+		    rl.rlim_cur = res;
+		    setrlimit(RLIMIT_CORE, &rl);
+                    printf("The limit has changed successfully\n");
                 }
                 else
                 {
                     printf("Error in getting limit\n");
-                }
-                rl.rlim_cur = atol(optarg);
-                res = setrlimit(RLIMIT_CORE, &rl);
-                if (res != -1)
-                {
-                    printf("Limit has changed successfully\n");
-                    printf("Current core file limit:\t%lu\n",rl.rlim_cur);
-                }
-                else
-                {
-                    printf("Error in setting limit\n");
                 }
                 break;
             case 'd':
