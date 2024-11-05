@@ -76,9 +76,9 @@ int main(int argc, char** argv, char** envp)
                 }
                 break;
             case 'C':
-                rl.rlim_cur = atol(optarg);
 		res = atol(optarg);
-               	if (res > 0)
+		getrlimit(RLIMIT_CORE,&rl);
+               	if (res > 0 && res <= rl.rlim_max)  
                 {
 		    rl.rlim_cur = res;
 		    setrlimit(RLIMIT_CORE, &rl);
