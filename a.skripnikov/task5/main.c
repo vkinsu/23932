@@ -71,7 +71,10 @@ int main(int argc, char *argv[])
             continue;
         }
 
-        if (sscanf(input, "%d", &line_number) != 1)
+        char *endptr;
+        line_number = strtol(input, &endptr, 10);
+
+        if (*endptr != '\n' && *endptr != '\0')
         {
             printf("Invalid input! Please enter a valid number.\n");
             continue;
