@@ -100,7 +100,12 @@ int main(int argc, char *argv[])
 
         alarm(0);
 
-        if (sscanf(input, "%d", &line_number) != 1)
+        // Используем strtol для проверки корректности ввода
+        char *endptr;
+        line_number = strtol(input, &endptr, 10);
+
+        // Проверка: если после числа есть лишние символы, выводим ошибку
+        if (*endptr != '\n' && *endptr != '\0')
         {
             printf("Invalid input! Please enter a valid number.\n");
             continue;
