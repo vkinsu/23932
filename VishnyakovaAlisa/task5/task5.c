@@ -32,8 +32,8 @@ int main() {
     char prev = ' ';
     while (result > 0)
     {
-       
-        for (int i = 0; i < result; i++)
+        int i = 0;
+        for ( i < result; i++)
         {
             char tek = buffer[i];
             if ((prev == 0x0d && (tek != 0x0a)) || (prev == 0x0a ))
