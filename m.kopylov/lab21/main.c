@@ -17,7 +17,6 @@ void set_term()
     attr.c_iflag = ISIG;
     attr.c_cc[VINTR] = 'c';
     attr.c_cc[VQUIT] = 'q';
-
     tcsetattr(STDERR_FILENO, TCSAFLUSH, &attr);
     return;
 }
@@ -33,12 +32,10 @@ static size_t sign = 0;
 void intsignal(int signo)
 {
     char bell = '\a';
-    while (1) 
-    {
-	write(1, &bell, 1);
-        sign++;
-    }
+    write(1, &bell, 1);
+    sign++;
 }
+
 
 void quitsignal(int signo)
 {
@@ -49,12 +46,20 @@ void quitsignal(int signo)
 int main()
 {
     setbuf(stdout, NULL);
+
+    struct sigaction sa_int, sa_quit;
+    sa_int.sa_handler = intsignal;
+    sa_quit.sa_handler = quitsignal;
+    sigemptyset(&sa_int.sa_mask);
+    sigemptyset(&sa_quit.sa_mask);
+    sigaction(SIGINT, &sa_int, NULL);
+    sigaction(SIGQUIT, &sa_quit, NULL);
+
     set_term();
     atexit(reset_term);
-    signal(SIGINT, intsignal);
-    signal(SIGQUIT, quitsignal);
 
-    while (1) {};
+    while (1);
+
 
     return 0;
 }
