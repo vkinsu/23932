@@ -16,31 +16,19 @@
     tcsetattr(0, TCSANOW, &saved_attributes);
  }
 
-static int count = 0;
-void sighnd(int signo)
-{
-    if (count == 3) exit(0);
-    count ++;
-   
-    printf("There is no exit AHHAHAHAHHA\n");
-}
-
 void set_input_mode(void)
 {
     struct termios tattr;
- /* проверяем, что вводcим с терминала */
     if (!isatty(0))
     {
         fprintf(stderr, "Not a terminal.\n");
         exit(1);
     }
-    /* считываем текущий режим работы терминала */
     tcgetattr(0, &saved_attributes);
     memcpy(&tattr, &saved_attributes, sizeof(tattr));
-    /* включаем неканонический режим без эха */
     tattr.c_lflag &= ~(ICANON|ECHO);
-    //tattr.c_iflag |= ECHOE;
-    /* считываем минимум по одному символу */
+    tattr.c_lflag |= ISIG;
+    tattr.c_cc[VINTR] = 0;
     tattr.c_cc[VMIN] = 1;
 
     /* без ограничения времени ожидания */
@@ -67,8 +55,6 @@ void set_input_mode(void)
     atexit(reset_input_mode);
 
     /* устанавливаем обработку сигналов завершения */
-    signal(SIGINT, sighnd);
-    signal(SIGTERM, sighnd);
 
     while (1)
     {
