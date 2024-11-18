@@ -74,7 +74,7 @@ int main() {
                 }
             }
             else {
-                write(STDOUT_FILENO, "\a", 1); // Звуковой сигнал при превышении длины
+                write(STDOUT_FILENO, "\7", 1); // Звуковой сигнал при превышении длины
             }
         }
         else {
