@@ -9,7 +9,7 @@ int k = 0; // Счетчик сигналов
 // Обработчик для SIGINT
 void mysignal(int var) {
     k += 1; // Увеличиваем счетчик
-    printf("\7"); // Звуковой сигнал
+    printf("\7\n"); // Звуковой сигнал
     signal(SIGINT, mysignal);
 }
 
