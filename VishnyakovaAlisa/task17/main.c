@@ -1,88 +1,100 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <termios.h>
+#include <unistd.h>
 #include <string.h>
 
-// Настройка терминала для неканонического режима
-void setup_terminal(struct termios* saved_settings) {
-    struct termios new_settings;
-    tcgetattr(STDIN_FILENO, saved_settings); // Сохраняем текущие настройки
-    new_settings = *saved_settings;
-    new_settings.c_lflag &= ~ICANON; // Отключаем канонический режим
-    new_settings.c_lflag &= ~ECHO;    // Отключаем эхо
-    tcsetattr(STDIN_FILENO, TCSANOW, &new_settings); // Применяем новые настройки
-}
+#define KILL_STRING "\r033[K"
+#define ERASE_STRING "\b \b"
+#define BEEP_SOUND "x07"
 
-// Удаление последнего символа из буфера ввода
-void remove_last_char(char* buffer, int* position) {
-    if (*position > 0) {
-        (*position)--; // Уменьшаем позицию
-        buffer[*position] = '\0'; // Удаляем символ
-        write(STDOUT_FILENO, "\b \b", 3); // Удаляем символ из вывода
-    }
-    else {
-        write(STDOUT_FILENO, "\a", 1); // Звуковой сигнал, если ничего нет для удаления
-    }
-}
+int main()
+{
+    char input_buffer[41];
+    int input_index = 0;
+    struct termios original_termios, new_termios;
 
-// Удаление последнего слова из буфера ввода
-void remove_last_word(char* buffer, int* position) {
-    while (*position > 0 && buffer[*position - 1] == ' ') {
-        remove_last_char(buffer, position); // Удаляем пробелы в конце слова
-    }
-    while (*position > 0 && buffer[*position - 1] != ' ') {
-        remove_last_char(buffer, position); // Удаляем символы слова
-    }
-}
+    // Получаем текущие настройки терминала
+    tcgetattr(STDIN_FILENO, &original_termios);
+    new_termios = original_termios;
 
-int main() {
-    struct termios original_settings;
-    setup_terminal(&original_settings); // Настраиваем терминал
+    // Настраиваем терминал для неканонического ввода без эха
+    new_termios.c_lflag &= ~(ECHO | ICANON);
+    new_termios.c_cc[VMIN] = 1;
+    new_termios.c_cc[VTIME] = 0;
 
-    char input_buffer[41] = { 0 }; // Буфер для ввода (максимум 40 символов + нуль-терминатор)
-    int current_index = 0; // Текущая позиция в буфере
+    // Устанавливаем новые настройки терминала
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &new_termios);
+    new_termios.c_cc[VERASE] = 8;   // Backspace
+    new_termios.c_cc[VWERASE] = 23; // Ctrl+W
+    new_termios.c_cc[VKILL] = 21;   // Ctrl+U
+    new_termios.c_cc[VEOF] = 4;     // Ctrl+D
 
-    while (1) {
-        char input_char;
-        if (read(STDIN_FILENO, &input_char, 1) <= 0) {
-            perror("Ошибка чтения ввода");
+    while (1)
+    {
+        char character;
+        read(STDIN_FILENO, &character, 1);
+
+        if (character == 10) // Enter
+        {
+            input_index = 0;
+            write(1, &character, 1);
             break;
         }
 
-        if (input_char == 4 && current_index == 0) { // Ctrl-D для выхода
+        if (character == 4 && input_index == 0) // Ctrl+D
             break;
-        }
-        else if (input_char == 127) { // Символ удаления (Backspace)
-            remove_last_char(input_buffer, &current_index);
-        }
-        else if (input_char == 21) { // Ctrl-U для очистки строки
-            while (current_index > 0) {
-                remove_last_char(input_buffer, &current_index);
+
+        if (character == 127) // Backspace
+        {
+            if (input_index > 0)
+            {
+                input_index--;
+                write(1, ERASE_STRING, strlen(ERASE_STRING));
+                continue;
             }
         }
-        else if (input_char == 23) { // Ctrl-W для удаления последнего слова
-            remove_last_word(input_buffer, &current_index);
+        else if (character == 21) // Ctrl+U
+        {
+            write(1, KILL_STRING, strlen(KILL_STRING));
+            input_index = 0;
+            continue;
         }
-        else if (input_char >= 32 && input_char <= 126) { // Допустимые символы
-            if (current_index < 40) {
-                input_buffer[current_index++] = input_char; // Добавляем символ в буфер
-                write(STDOUT_FILENO, &input_char, 1); // Выводим символ на экран
-                if (current_index == 40) { // Если достигнут лимит
-                    write(STDOUT_FILENO, "\n", 1);
-                    current_index = 0; // Сбрасываем индекс
-                }
+        else if (character == 23) // Ctrl+W
+        {
+            while (input_index > 0 && input_buffer[input_index - 1] == ' ')
+            {
+                input_index--;
+                write(1, ERASE_STRING, strlen(ERASE_STRING));
             }
-            else {
-                write(STDOUT_FILENO, "\7", 1); // Звуковой сигнал при превышении длины
+            while (input_index > 0 && input_buffer[input_index - 1] != ' ')
+            {
+                input_index--;
+                write(1, ERASE_STRING, strlen(ERASE_STRING));
             }
+            continue;
         }
-        else {
-            write(STDOUT_FILENO, "\a", 1); // Звуковой сигнал для недопустимого ввода
+        else if (input_index < 40 && (character >= 32 && character <= 126))
+        {
+            input_buffer[input_index++] = character;
+            write(1, &character, 1);
+        }
+        else if (character >= 32 && character <= 126)
+        {
+            input_index = 0;
+            write(1, "\n", 1);
+            input_buffer[input_index++] = character;
+            write(1, &character, 1);
+        }
+        else
+        {
+            write(1, BEEP_SOUND, strlen(BEEP_SOUND));
+            continue;
         }
     }
 
-    write(STDOUT_FILENO, "\n", 1); // Печатаем новую строку перед выходом
-    tcsetattr(STDIN_FILENO, TCSANOW, &original_settings); // Восстанавливаем настройки терминала
+    // Восстанавливаем оригинальные настройки терминала
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &original_termios);
     return 0;
 }
+
