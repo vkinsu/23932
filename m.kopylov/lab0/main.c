@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/resource.h>
@@ -8,6 +9,29 @@
 #define BUFF_SIZE 256
 extern char *optarg;
 extern int optind, opterr, optopt;
+static char env_names[BUFF_SIZE] = {0};
+static char env_values[BUFF_SIZE] = {0};
+extern char** environ;
+
+void set_env(char* optarg)
+{
+        int n = strlen(optarg);
+        int i = 0;
+        int index = 0;
+        for (; optarg[i] != '='; i++)
+        {
+                if (optarg[i] != ' ') env_names[index++] = optarg[i];
+        }
+        env_names[index + 1] = '\0';
+        index = 0;
+        i++;
+        for (; i < n; i++)
+        {
+                if (optarg[i] != ' ') env_values[index++] = optarg[i];
+        }
+        env_values[index+1] = '\0';
+}
+
 
 int main(int argc, char** argv, char** envp)
 {
@@ -102,17 +126,18 @@ int main(int argc, char** argv, char** envp)
                 }
                 break;
             case 'v':
-                for (char **env = envp; *env != 0; env++)
+                for (char **env = environ; *env != 0; env++)
                 {
                     char *thisEnv = *env;
                     printf("%s\n", thisEnv);
                 }
                 break;
             case 'V':
-                res = putenv(optarg);
-                if (res != -1)
+		set_env(optarg);
+                if (putenv(optarg) == 0)
                 {
                     printf("The variable has changed successfully\n");
+		    printf("%s=%s\n", env_names, getenv(env_names));
                 }
                 else
                 {
