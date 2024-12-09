@@ -1,0 +1,5 @@
+Hello, World!
+Welcome to this file.
+asdfghjkl
+Each line will be displayed.
+You can quit by entering 0.

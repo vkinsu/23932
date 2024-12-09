@@ -1,0 +1,90 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+typedef struct line_info {
+    int indentation;
+    int length;
+} line_info;
+
+typedef struct vector {
+    line_info* data;
+    int capacity;
+    int count;
+} vector;
+
+vector vector_init() {
+    vector v;
+    v.data = (line_info*)malloc(sizeof(line_info));
+    v.capacity = 1;
+    v.count = 0;
+    return v;
+}
+
+void vector_add(vector* v, line_info* data) {
+    if (v != NULL) {
+        if (v->capacity == v->count) {
+            v->capacity *= 2;
+            line_info* check = (line_info*)realloc(v->data, v->capacity * sizeof(line_info));
+            if (check != NULL)
+                v->data = check;
+            else
+                return;
+        }
+        v->data[v->count++] = *data;
+    }
+}
+
+void vector_destroy(vector* v) {
+    if (v != NULL)
+        free(v->data);
+}
+
+vector build_table(int descriptor) {
+    vector table = vector_init();
+    char symbol;
+    int indentation = 0;
+    int length = 0;
+    while (1) {
+        long f = read(descriptor, &symbol, 1);
+        if (symbol == '\n' || f == 0) {
+            line_info data = { indentation, length };
+            vector_add(&table, &data);
+            indentation += length + 1;
+            length = 0;
+            if (f == 0)
+                break;
+        }
+        else
+            length++;
+    }
+    return table;
+}
+
+int main() {
+    int descriptor = open("input.txt", O_RDONLY);
+    if (descriptor == -1) {
+        perror("");
+        exit(1);
+    }
+    vector table = build_table(descriptor);
+    while (1) {
+        printf("Enter the number of a line: ");
+        char digits[32];
+        fgets(digits, 32, stdin);
+        long number = strtol(digits, NULL, 10);
+        if (number == 0)
+            break;
+        if (0 < number && number <= table.count) {
+            lseek(descriptor, table.data[number - 1].indentation, SEEK_SET);
+            char line[table.data[number - 1].length];
+            read(descriptor, line, table.data[number - 1].length);
+            line[table.data[number - 1].length] = 0;
+            printf("%s\n", line);
+        }
+    }
+    vector_destroy(&table);
+    close(descriptor);
+    return 0;
+}
