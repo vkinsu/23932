@@ -64,7 +64,7 @@ int main() {
         char* lineBuffer = (char*)malloc(length + 1);
         if (lineBuffer == NULL)
         {
-            perror("Memory allocation error for line");
+            perror("Memory allocation error for line\n");
             free(mas);
             free(buffer);
             fclose(ptrFile);
@@ -91,8 +91,8 @@ int main() {
         alarm(5);
 
         if (scanf("%d", &lineNumber) != 1) {
-            printf("Invalid input. Please enter a number.n");
-            while (getchar() != 'n'); // очистка ввода
+            printf("Invalid input. Please enter a number.\n");
+            while (getchar() != '\n'); // очистка ввода
             alarm(0);
             continue;
         }
@@ -104,7 +104,7 @@ int main() {
         }
 
         if (lineNumber < 1 || lineNumber > count1) {
-            printf("Invalid line number. Please enter a number from 1 to %dn", count1);
+            printf("Invalid line number. Please enter a number from 1 to %d\n", count1);
             continue;
         }
         else {
@@ -112,7 +112,7 @@ int main() {
             int length = (lineNumber == count1) ? ind - mas[lineNumber - 1] : mas[lineNumber] - mas[lineNumber - 1];
 
             if (length == 0) {
-                printf("Line %d : n", lineNumber);
+                printf("Line %d : \n", lineNumber);
             }
             else {
                 char* lineBuffer = (char*)malloc(length + 1); // +1 для '0'
@@ -122,7 +122,7 @@ int main() {
                 }
                 fread(lineBuffer, 1, length, ptrFile);
                 lineBuffer[length] = '0'; // корректно завершаем строку
-                printf("Line %d: %sn", lineNumber, lineBuffer);
+                printf("Line %d: %s\n", lineNumber, lineBuffer);
                 free(lineBuffer);
             }
         }
