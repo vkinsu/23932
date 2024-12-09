@@ -1,100 +1,120 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <termios.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
+#include <termios.h>
 
-#define KILL_STRING "\r033[K"
-#define ERASE_STRING "\b \b"
-#define BEEP_SOUND "x07"
+#define MAX_INPUT_LENGTH 40
+#define CTRL_D 4
+#define CTRL_W 23
+#define BACKSPACE 127
+#define CTRL_U 21
+#define CTRL_G 7
 
-int main()
-{
-    char input_buffer[41];
-    int input_index = 0;
-    struct termios original_termios, new_termios;
+void set_raw_mode(struct termios* original_settings) {
+    struct termios raw_settings;
 
-    // Получаем текущие настройки терминала
-    tcgetattr(STDIN_FILENO, &original_termios);
-    new_termios = original_termios;
-
-    // Настраиваем терминал для неканонического ввода без эха
-    new_termios.c_lflag &= ~(ECHO | ICANON);
-    new_termios.c_cc[VMIN] = 1;
-    new_termios.c_cc[VTIME] = 0;
-
-    // Устанавливаем новые настройки терминала
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &new_termios);
-    new_termios.c_cc[VERASE] = 8;   // Backspace
-    new_termios.c_cc[VWERASE] = 23; // Ctrl+W
-    new_termios.c_cc[VKILL] = 21;   // Ctrl+U
-    new_termios.c_cc[VEOF] = 4;     // Ctrl+D
-
-    while (1)
-    {
-        char character;
-        read(STDIN_FILENO, &character, 1);
-
-        if (character == 10) // Enter
-        {
-            input_index = 0;
-            write(1, &character, 1);
-            break;
-        }
-
-        if (character == 4 && input_index == 0) // Ctrl+D
-            break;
-
-        if (character == 127) // Backspace
-        {
-            if (input_index > 0)
-            {
-                input_index--;
-                write(1, ERASE_STRING, strlen(ERASE_STRING));
-                continue;
-            }
-        }
-        else if (character == 21) // Ctrl+U
-        {
-            write(1, KILL_STRING, strlen(KILL_STRING));
-            input_index = 0;
-            continue;
-        }
-        else if (character == 23) // Ctrl+W
-        {
-            while (input_index > 0 && input_buffer[input_index - 1] == ' ')
-            {
-                input_index--;
-                write(1, ERASE_STRING, strlen(ERASE_STRING));
-            }
-            while (input_index > 0 && input_buffer[input_index - 1] != ' ')
-            {
-                input_index--;
-                write(1, ERASE_STRING, strlen(ERASE_STRING));
-            }
-            continue;
-        }
-        else if (input_index < 40 && (character >= 32 && character <= 126))
-        {
-            input_buffer[input_index++] = character;
-            write(1, &character, 1);
-        }
-        else if (character >= 32 && character <= 126)
-        {
-            input_index = 0;
-            write(1, "\n", 1);
-            input_buffer[input_index++] = character;
-            write(1, &character, 1);
-        }
-        else
-        {
-            write(1, BEEP_SOUND, strlen(BEEP_SOUND));
-            continue;
-        }
+    if (tcgetattr(STDIN_FILENO, original_settings) == -1) {
+        perror("Failed to get terminal settings");
+        exit(1);
     }
 
-    // Восстанавливаем оригинальные настройки терминала
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &original_termios);
-    return 0;
+    raw_settings = *original_settings;
+    raw_settings.c_lflag &= ~(ICANON | ECHO);
+
+    if (tcsetattr(STDIN_FILENO, TCSANOW, &raw_settings) == -1) {
+        perror("Failed to set terminal to raw mode");
+        exit(1);
+    }
 }
 
+void reset_terminal_mode(struct termios* original_settings) {
+    if (tcsetattr(STDIN_FILENO, TCSANOW, original_settings) == -1) {
+        perror("Failed to restore terminal mode");
+    }
+}
+
+void process_input() {
+    char input_buffer[MAX_INPUT_LENGTH + 1] = { 0 };
+    int cursor_position = 0;
+    char ch;
+
+    while (1) {
+        if (read(STDIN_FILENO, &ch, 1) <= 0) {
+            perror("Error reading input");
+            break;
+        }
+
+        if (ch == CTRL_D && cursor_position == 0) {
+            break;
+        }
+        else if (ch == BACKSPACE) {
+            if (cursor_position > 0) {
+                cursor_position--;
+                printf("\b \b");
+                fflush(stdout);
+            }
+        }
+        else if (ch == CTRL_U) {
+            while (cursor_position > 0) {
+                cursor_position--;
+                printf("\b \b");
+            }
+            fflush(stdout);
+        }
+        else if (ch == CTRL_W) {
+            while (cursor_position > 0 && input_buffer[cursor_position - 1] == ' ') {
+                cursor_position--;
+                printf("\b \b");
+            }
+            while (cursor_position > 0 && input_buffer[cursor_position - 1] != ' ') {
+                cursor_position--;
+                printf("\b \b");
+            }
+            fflush(stdout);
+        }
+        else if (ch == '033') {
+            char seq[2];
+            if (read(STDIN_FILENO, &seq[0], 1) <= 0) break;
+            if (read(STDIN_FILENO, &seq[1], 1) <= 0) break;
+
+            printf("^G");
+            putchar(CTRL_G);
+            fflush(stdout);
+            cursor_position += 2;
+        }
+        else if (ch >= 1 && ch < 32 && ch != CTRL_D && ch != CTRL_W && ch != BACKSPACE && ch != CTRL_U) {
+            putchar(CTRL_G);
+            fflush(stdout);
+            cursor_position += 2;
+        }
+        else {
+            if (cursor_position < MAX_INPUT_LENGTH) {
+                input_buffer[cursor_position++] = ch;
+                putchar(ch);
+                fflush(stdout);
+            }
+            else if (ch == ' ') {
+                putchar('\n');
+                cursor_position = 0;
+                fflush(stdout);
+            }
+        }
+    }
+}
+
+int main() {
+    struct termios original_settings;
+
+    set_raw_mode(&original_settings);
+
+    printf("Enter text (CTRL-D to exit):\n");
+    fflush(stdout);
+
+    process_input();
+
+    reset_terminal_mode(&original_settings);
+
+    printf("\nProgram terminated.\n");
+    return 0;
+}
