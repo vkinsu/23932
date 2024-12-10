@@ -1,120 +1,95 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 #include <termios.h>
+#include <unistd.h>
+#include <string.h>
+#include <ctype.h>
 
-#define MAX_INPUT_LENGTH 40
-#define CTRL_D 4
-#define CTRL_W 23
-#define BACKSPACE 127
-#define CTRL_U 21
-#define CTRL_G 7
 
-void set_raw_mode(struct termios* original_settings) {
-    struct termios raw_settings;
+#include <stdlib.h>
+#include <stdio.h>
 
-    if (tcgetattr(STDIN_FILENO, original_settings) == -1) {
-        perror("Failed to get terminal settings");
-        exit(1);
-    }
 
-    raw_settings = *original_settings;
-    raw_settings.c_lflag &= ~(ICANON | ECHO);
+#define LEN 255
 
-    if (tcsetattr(STDIN_FILENO, TCSANOW, &raw_settings) == -1) {
-        perror("Failed to set terminal to raw mode");
-        exit(1);
-    }
-}
+#define DEL  "\33[D\33[K"
+#define DEL_ALL "\33[2K\r"
 
-void reset_terminal_mode(struct termios* original_settings) {
-    if (tcsetattr(STDIN_FILENO, TCSANOW, original_settings) == -1) {
-        perror("Failed to restore terminal mode");
-    }
-}
+struct termios terminal, w_o_echo_and_canon;
 
-void process_input() {
-    char input_buffer[MAX_INPUT_LENGTH + 1] = { 0 };
-    int cursor_position = 0;
-    char ch;
-
-    while (1) {
-        if (read(STDIN_FILENO, &ch, 1) <= 0) {
-            perror("Error reading input");
-            break;
-        }
-
-        if (ch == CTRL_D && cursor_position == 0) {
-            break;
-        }
-        else if (ch == BACKSPACE) {
-            if (cursor_position > 0) {
-                cursor_position--;
-                printf("\b \b");
-                fflush(stdout);
-            }
-        }
-        else if (ch == CTRL_U) {
-            while (cursor_position > 0) {
-                cursor_position--;
-                printf("\b \b");
-            }
-            fflush(stdout);
-        }
-        else if (ch == CTRL_W) {
-            while (cursor_position > 0 && input_buffer[cursor_position - 1] == ' ') {
-                cursor_position--;
-                printf("\b \b");
-            }
-            while (cursor_position > 0 && input_buffer[cursor_position - 1] != ' ') {
-                cursor_position--;
-                printf("\b \b");
-            }
-            fflush(stdout);
-        }
-        else if (ch == '033') {
-            char seq[2];
-            if (read(STDIN_FILENO, &seq[0], 1) <= 0) break;
-            if (read(STDIN_FILENO, &seq[1], 1) <= 0) break;
-
-            printf("^G");
-            putchar(CTRL_G);
-            fflush(stdout);
-            cursor_position += 2;
-        }
-        else if (ch >= 1 && ch < 32 && ch != CTRL_D && ch != CTRL_W && ch != BACKSPACE && ch != CTRL_U) {
-            putchar(CTRL_G);
-            fflush(stdout);
-            cursor_position += 2;
-        }
-        else {
-            if (cursor_position < MAX_INPUT_LENGTH) {
-                input_buffer[cursor_position++] = ch;
-                putchar(ch);
-                fflush(stdout);
-            }
-            else if (ch == ' ') {
-                putchar('\n');
-                cursor_position = 0;
-                fflush(stdout);
-            }
-        }
-    }
+void set() {
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &terminal);
+    return;
 }
 
 int main() {
-    struct termios original_settings;
+    tcgetattr(STDIN_FILENO, &terminal);
+    atexit(set);
+    w_o_echo_and_canon = terminal;
+    w_o_echo_and_canon.c_lflag &= ~(ECHO | ICANON);
+    w_o_echo_and_canon.c_cc[VMIN] = 1;
+    w_o_echo_and_canon.c_cc[VTIME] = 0;
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &w_o_echo_and_canon);
+    char current_line[LEN + 1];
+    current_line[0] = '\0';
+    char current_symbol;
+    int current_lenght;
+    while (read(STDIN_FILENO, &current_symbol, 1)) {
+        current_lenght = strlen(current_line);
+        if (!isprint(current_symbol)) {
+            if (current_symbol == w_o_echo_and_canon.c_cc[VERASE]) {
+                if (current_lenght != 0) {
+                    current_line[current_lenght - 1] = '\0';
+                    write(1, DEL, strlen(DEL));
+                }
 
-    set_raw_mode(&original_settings);
+            }
+            else if (current_symbol == w_o_echo_and_canon.c_cc[VWERASE]) {
+                int i = current_lenght - 1;
+                char word_started = 0;
+                while (i >= 0) {
+                    if (current_line[i] == ' ' && word_started == 0) {
+                        write(1, DEL, strlen(DEL));
+                        current_line[i] = '\0';
+                    }
+                    else if (current_line[i] != ' ' && word_started == 0) {
+                        word_started = 1;
+                        write(1, DEL, strlen(DEL));
+                        current_line[i] = '\0';
+                    }
+                    else if (current_line[i] != ' ' && word_started == 1) {
+                        write(1, DEL, strlen(DEL));
+                        current_line[i] = '\0';
+                    }
+                    else if (current_line[i] == ' ' && word_started == 1) {
+                        break;
+                    }
+                    i--;
+                }
 
-    printf("Enter text (CTRL-D to exit):\n");
-    fflush(stdout);
+            }
+            else if (current_symbol == w_o_echo_and_canon.c_cc[VKILL]) {
+                write(1, DEL_ALL, strlen(DEL_ALL));
+                current_line[0] = '\0';
 
-    process_input();
+            }
+            else if (current_symbol == '\004') {
+                if (current_lenght == 0) {
+                    return(0);
+                }
+            }
+            else {
+                write(1, "\x07", 1);
+            }
 
-    reset_terminal_mode(&original_settings);
-
-    printf("\nProgram terminated.\n");
+        }
+        else {
+            if (current_lenght == LEN) {
+                write(1, "\n", 1);
+                current_lenght = 0;
+            }
+            current_line[current_lenght] = current_symbol;
+            current_line[current_lenght + 1] = '\0';
+            write(1, &current_symbol, 1);
+        }
+    }
     return 0;
 }
