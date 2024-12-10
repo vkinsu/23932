@@ -8,7 +8,7 @@
 #include <stdio.h>
 
 
-#define LEN 255
+#define LEN 40
 
 #define DEL  "\33[D\33[K"
 #define DEL_ALL "\33[2K\r"
