@@ -7,8 +7,6 @@
 #include <sys/un.h>
 #include <sys/epoll.h>
 #include <time.h>
-#include <sys/select.h>
-
 
 #define SOCKET_PATH "/tmp/task32_socket"
 #define BUFFER_SIZE 1024
