@@ -1,90 +1,90 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <sys/epoll.h>
-#include <time.h>
+#include <ctype.h>
+#include <pthread.h>
 
-#define SOCKET_PATH "/tmp/task32_socket"
-#define BUFFER_SIZE 1024
-#define MAX_EVENTS 10
+#define SOCKET_PATH "./unix_domain_socket"
 
-void delay(int milliseconds) {
-    long pause;
-    clock_t now, then;
+void *handle_client(void *arg) {
+  int client_fd = *(int *)arg;
+  char buffer[1024];
+  ssize_t bytes_received;
 
-    pause = milliseconds * (CLOCKS_PER_SEC / 1000);
-    now = then = clock();
-    while ((now - then) < pause) {
-        now = clock();
+  while ((bytes_received = read(client_fd, buffer, sizeof(buffer) - 1)) > 0) {
+    buffer[bytes_received] = '\0';
+
+    for (int j = 0; buffer[j] != '\0'; j++) {
+      buffer[j] = toupper(buffer[j]);
     }
-}
 
-typedef struct {
-    int client_fd;
-    int client_id;
-} client_info;
+    printf("Received text: %s\n", buffer);
+  }
 
-void handle_client(int client_fd, int client_id) {
-    char buffer[BUFFER_SIZE];
-    int bytes = read(client_fd, buffer, sizeof(buffer));
-    if (bytes > 0) {
-        for (int i = 0; i < bytes; i++) {
-            buffer[i] = toupper(buffer[i]);
-        }
-        printf("Client %d sent: ", client_id);
-        for (int i = 0; i < bytes; i++) {
-            putchar(buffer[i]);
-            fflush(stdout);
-            delay(10);
-        }
-        printf("\n");
-    } else {
-        printf("Client %d disconnected.\n", client_id);
-        close(client_fd);
-    }
+  close(client_fd);
+  free(arg);
+  return NULL;
 }
 
 int main() {
-    int server_fd, epoll_fd, client_fd;
-    struct sockaddr_un address;
-    struct epoll_event ev, events[MAX_EVENTS];
-    int client_ids[FD_SETSIZE];
-    int client_count = 0;
+  int server_fd, client_fd;
+  struct sockaddr_un address;
+  struct sockaddr_un client_address;
+  socklen_t client_len;
+  pthread_t client_thread;
 
-    for (int i = 0; i < FD_SETSIZE; i++) {
-        client_ids[i] = -1;
+  // Создаем сокет
+  server_fd = socket(AF_UNIX, SOCK_STREAM, 0); // потоковый сокет
+  if (server_fd == -1) {
+    perror("\nSocket making error\n");
+    exit(1);
+  }
+
+  unlink(SOCKET_PATH);
+
+  // Настраиваем адрес сокета
+  address.sun_family = AF_UNIX;
+  strncpy(address.sun_path, SOCKET_PATH, sizeof(address.sun_path) - 1);
+
+  // Привязываем сокет к адресу
+  if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) == -1) {
+    perror("\nServer connection error\n");
+    close(server_fd);
+    exit(1);
+  }
+
+  // Слушаем на сокете
+  if (listen(server_fd, 5) == -1) {
+    perror("\nSocket listening error\n");
+    close(server_fd);
+    exit(1);
+  }
+
+  while (1) {
+    client_len = sizeof(client_address);
+    client_fd = accept(server_fd, (struct sockaddr *)&client_address, &client_len);
+    if (client_fd == -1) {
+      perror("\nAccept error\n");
+      continue;
     }
 
-    server_fd = socket(AF_UNIX, SOCK_STREAM, 0);
-    memset(&address, 0, sizeof(address));
-    address.sun_family = AF_UNIX;
-    strncpy(address.sun_path, SOCKET_PATH, sizeof(address.sun_path) - 1);
-    unlink(SOCKET_PATH);
-    bind(server_fd, (struct sockaddr *)&address, sizeof(address));
-    listen(server_fd, 5);
+    int *client_fd_ptr = malloc(sizeof(int));
+    *client_fd_ptr = client_fd;
 
-    epoll_fd = epoll_create1(0);
-    ev.events = EPOLLIN;
-    ev.data.fd = server_fd;
-    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &ev);
-
-    while (1) {
-        int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-        for (int n = 0; n < nfds; n++) {
-            if (events[n].data.fd == server_fd) {
-                client_fd = accept(server_fd, NULL, NULL);
-                client_ids[client_fd] = client_count++;
-                ev.events = EPOLLIN | EPOLLET;
-                ev.data.fd = client_fd;
-                epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev);
-                printf("Client %d connected.\n", client_ids[client_fd]);
-            } else {
-                handle_client(events[n].data.fd, client_ids[events[n].data.fd]);
-            }
-        }
+    if (pthread_create(&client_thread, NULL, handle_client, client_fd_ptr) != 0) {
+      perror("\nThread creation error\n");
+      close(client_fd);
+      free(client_fd_ptr);
+    } else {
+      pthread_detach(client_thread);
     }
+  }
+
+  close(server_fd);
+  unlink(SOCKET_PATH);
+
+  return 0;
 }
