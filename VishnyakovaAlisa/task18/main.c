@@ -1,73 +1,71 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <pwd.h>
 #include <grp.h>
 #include <time.h>
-#include <stdio.h>
+
+void print_permissions(mode_t mode) {
+    // Функция для вывода прав доступа
+    printf("%c", (S_ISDIR(mode)) ? 'd' : '-');
+    printf("%c", (mode & S_IRUSR) ? 'r' : '-');
+    printf("%c", (mode & S_IWUSR) ? 'w' : '-');
+    printf("%c", (mode & S_IXUSR) ? 'x' : '-');
+    printf("%c", (mode & S_IRGRP) ? 'r' : '-');
+    printf("%c", (mode & S_IWGRP) ? 'w' : '-');
+    printf("%c", (mode & S_IXGRP) ? 'x' : '-');
+    printf("%c", (mode & S_IROTH) ? 'r' : '-');
+    printf("%c", (mode & S_IWOTH) ? 'w' : '-');
+    printf("%c", (mode & S_IXOTH) ? 'x' : '-');
+}
+
+void print_file_info(const char* filename) {
+    struct stat file_stat;
+    if (stat(filename, &file_stat) == -1) {
+        perror("Не удалось получить информацию о файле");
+        return;
+    }
+
+    print_permissions(file_stat.st_mode);
+    printf(" %3d ", file_stat.st_nlink);
+
+    struct group* group_info = getgrgid(file_stat.st_gid);
+    struct passwd* user_info = getpwuid(file_stat.st_uid);
+
+    printf("%s ", group_info->gr_name);
+    printf("%s ", user_info->pw_name);
+    printf("%7ld ", file_stat.st_size);
+
+    char* months[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+
+    struct tm* mod_time = localtime(&file_stat.st_mtime);
+    printf("%s %2d %2d:%02d ", months[mod_time->tm_mon],
+        mod_time->tm_mday, mod_time->tm_hour, mod_time->tm_min);
+
+    const char* basename = strrchr(filename, '/');
+    if (basename) {
+        basename++; // Пропускаем '/'
+    }
+    else {
+        basename = filename; // Если '/' нет, используем весь путь
+    }
+
+    printf("%s\n", basename);
+}
 
 int main(int argc, char* argv[]) {
     if (argc > 1) {
-        struct stat sb;
-        struct group* grp;
-        struct passwd* pwp;
-        time_t mt;
-
         for (int i = 1; i < argc; i++) {
-            if (stat(argv[i], &sb) == -1) {
-                perror("Could not get information about the file");
-                continue; // Пропускаем файл, если произошла ошибка
-            }
-
-            // Определение типа файла
-            if (S_ISREG(sb.st_mode)) {
-                printf("- ");
-            }
-            else if (S_ISDIR(sb.st_mode)) {
-                printf("d ");
-            }
-            else {
-                printf("? ");
-            }
-
-            // Вывод прав доступа
-            printf("%c%c%c%c%c%c%c%c%c ",
-                (sb.st_mode & S_IRUSR) ? 'r' : '-',
-                (sb.st_mode & S_IWUSR) ? 'w' : '-',
-                (sb.st_mode & S_IXUSR) ? 'x' : '-',
-                (sb.st_mode & S_IRGRP) ? 'r' : '-',
-                (sb.st_mode & S_IWGRP) ? 'w' : '-',
-                (sb.st_mode & S_IXGRP) ? 'x' : '-',
-                (sb.st_mode & S_IROTH) ? 'r' : '-',
-                (sb.st_mode & S_IWOTH) ? 'w' : '-',
-                (sb.st_mode & S_IXOTH) ? 'x' : '-');
-
-            // Вывод имени группы
-            grp = getgrgid(sb.st_gid);
-            printf("%s ", grp ? grp->gr_name : "unknown_group");
-
-            // Вывод имени пользователя
-            pwp = getpwuid(sb.st_uid);
-            printf("%s ", pwp ? pwp->pw_name : "unknown_user");
-
-            // Вывод размера файла
-            printf("%ld ", sb.st_size);
-
-            // Вывод времени последнего изменения
-            mt = sb.st_mtime;
-            struct tm* mtime = localtime(&mt);
-            printf("%02d/%02d %02d:%02d ",
-                mtime->tm_mon + 1,
-                mtime->tm_mday,
-                mtime->tm_hour,
-                mtime->tm_min);
-
-            // Вывод имени файла
-            char* filename = strrchr(argv[i], '/');
-            printf("%s\n", filename ? filename + 1 : argv[i]);
+            print_file_info(argv[i]);
         }
     }
+
     return 0;
 }
