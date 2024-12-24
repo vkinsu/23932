@@ -1,14 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <malloc.h>
 #include <signal.h>
 #include <unistd.h>
 #include <fcntl.h>
-#pragma warning(disable : 4996)
 
-void timeout_fun(int var)
-{
+void timeout_fun(int var) {
     printf("\nTime's out\n");
     exit(0);
 }
@@ -19,51 +16,61 @@ int main() {
         fputs("\nError opening file\n", stderr);
         exit(1);
     }
+
     size_t size1 = 10;
     char* buffer = (char*)malloc(65536 * sizeof(char));
     if (buffer == NULL) {
         fputs("\nMemory allocation error\n", stderr);
+        fclose(ptrFile);
         exit(2);
     }
+
     int count1 = 0;
     size_t* mas = (size_t*)malloc(sizeof(size_t) * size1);
     if (mas == NULL) {
         fputs("\nMemory allocation error for line numbers\n", stderr);
         free(buffer);
+        fclose(ptrFile);
         exit(4);
     }
-    mas[count1] = 0;
-    count1++;
-    int ind = 0;
+
+    mas[count1++] = 0;
     size_t result = fread(buffer, 1, 65536, ptrFile);
     char prev = ' ';
+    int ind = 0;
+
     while (result > 0) {
         for (int i = 0; i < result; i++) {
             char tek = buffer[i];
-            if ((prev == 0x0d && (tek != 0x0a)) || (prev == 0x0a)) {
-                mas[count1] = ind;
-                count1++;
-            }
-            if (count1 == size1) {
-                size1 = size1 + size1 / 2;
-                mas = realloc(mas, sizeof(size_t) * size1);
+            if ((prev == '\r' && tek != '\n') || (prev == '\n')) {
+                mas[count1++] = ind;
+                if (count1 == size1) {
+                    size1 += size1 / 2;
+                    mas = realloc(mas, sizeof(size_t) * size1);
+                    if (mas == NULL) {
+                        fputs("\nMemory allocation error for line numbers\n", stderr);
+                        free(buffer);
+                        fclose(ptrFile);
+                        exit(4);
+                    }
+                }
             }
             ind++;
             prev = tek;
         }
         result = fread(buffer, 1, 65536, ptrFile);
     }
-    if (prev == 0x0d || prev == 0x0a) {
+
+    if (prev == '\r' || prev == '\n') {
         mas[count1++] = ind;
     }
+
     printf("\n");
-    for (int i = 1; i <= count1; i++)
-    {
+    for (int i = 1; i <= count1; i++) {
         fseek(ptrFile, mas[i - 1], SEEK_SET);
         int length = (i == count1) ? ind - mas[i - 1] : mas[i] - mas[i - 1];
         char* lineBuffer = (char*)malloc(length + 1);
-        if (lineBuffer == NULL)
-        {
+        if (lineBuffer == NULL) {
             perror("\nMemory allocation error for line\n");
             free(mas);
             free(buffer);
@@ -71,14 +78,7 @@ int main() {
             exit(5);
         }
         fread(lineBuffer, 1, length, ptrFile);
-        if (length > 0)
-        {
-            lineBuffer[length - 1] = '\0';
-        }
-        else
-        {
-            lineBuffer[0] = '\0';
-        }
+        lineBuffer[length] = '0'; // Завершаем строку
         printf("\nLine %d:\n%s\n", i, lineBuffer);
         free(lineBuffer);
     }
@@ -90,14 +90,19 @@ int main() {
         signal(SIGALRM, timeout_fun);
         alarm(5);
 
-        if (scanf("%d", &lineNumber) != 1) {
-            printf("\nInvalid input. Please enter a number.\n");
-            while (getchar() != '\n'); // очистка ввода
+        char input[10];
+        if (fgets(input, sizeof(input), stdin) == NULL) {
+            printf("\nError reading input.\n");
             alarm(0);
             continue;
         }
 
         alarm(0);
+
+        if (sscanf(input, "%d", &lineNumber) != 1) {
+            printf("\nInvalid input. Please enter a number.\n");
+            continue;
+        }
 
         if (lineNumber == 0) {
             break;
@@ -111,20 +116,15 @@ int main() {
             fseek(ptrFile, mas[lineNumber - 1], SEEK_SET);
             int length = (lineNumber == count1) ? ind - mas[lineNumber - 1] : mas[lineNumber] - mas[lineNumber - 1];
 
-            if (length == 0) {
-                printf("\nLine %d : \n", lineNumber);
+            char* lineBuffer = (char*)malloc(length + 1); // +1 для '0'
+            if (lineBuffer == NULL) {
+                perror("\nMemory allocation error for line\n");
+                break;
             }
-            else {
-                char* lineBuffer = (char*)malloc(length + 1); // +1 для '0'
-                if (lineBuffer == NULL) {
-                    perror("\nMemory allocation error for line\n");
-                    break;
-                }
-                fread(lineBuffer, 1, length, ptrFile);
-                lineBuffer[length] = '0'; // корректно завершаем строку
-                printf("\nLine %d:\n %s\n", lineNumber, lineBuffer);
-                free(lineBuffer);
-            }
+            fread(lineBuffer, 1, length, ptrFile);
+            lineBuffer[length] = '0'; // Завершаем строку
+            printf("\nLine %d:\n%s\n", lineNumber, lineBuffer);
+            free(lineBuffer);
         }
     }
 
